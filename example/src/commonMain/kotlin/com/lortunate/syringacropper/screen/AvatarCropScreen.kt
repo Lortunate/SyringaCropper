@@ -31,13 +31,13 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.LocalNavBackStack
 import com.lortunate.syringacropper.avatar.AvatarCropShape
 import com.lortunate.syringacropper.avatar.AvatarCropState
 import com.lortunate.syringacropper.avatar.AvatarCropper
 import com.lortunate.syringacropper.avatar.rememberAvatarCropState
 import com.lortunate.syringacropper.formatDebugSummary
+import com.lortunate.syringacropper.toCropSourceSize
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -88,7 +88,7 @@ fun AvatarCropScreen() {
                 },
                 onInspectClick = {
                     val sourceSize = state.sourceSize
-                        ?: previewBitmap?.let { CropSourceSize(it.width, it.height) }
+                        ?: previewBitmap?.toCropSourceSize()
                         ?: return@AvatarActionPanel
                     val inspectionResult = cropState.selectionOrNull(
                         shape = state.shape,

@@ -28,12 +28,12 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.LocalNavBackStack
 import com.lortunate.syringacropper.formatDebugSummary
 import com.lortunate.syringacropper.perspective.PerspectiveCropState
 import com.lortunate.syringacropper.perspective.PerspectiveCropper
 import com.lortunate.syringacropper.perspective.rememberPerspectiveCropState
+import com.lortunate.syringacropper.toCropSourceSize
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -82,7 +82,7 @@ fun PerspectiveCropScreen() {
                 },
                 onInspectClick = {
                     val sourceSize = state.sourceSize
-                        ?: previewBitmap?.let { CropSourceSize(it.width, it.height) }
+                        ?: previewBitmap?.toCropSourceSize()
                         ?: return@ActionPanel
                     val inspectionResult = cropState.selectionOrNull(sourceSize)
                         ?.formatDebugSummary()
