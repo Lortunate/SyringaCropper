@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import com.lortunate.syringacropper.CropSourceSize
 
+/** Snapshot of the current avatar selection in normalized and source-image pixel coordinates. */
 data class AvatarCropSelection(
     val sourceSize: CropSourceSize,
     val shape: AvatarCropShape,
@@ -55,6 +56,7 @@ class AvatarCropState {
         )
     }
 
+    /** Returns the current selection using the original source-image pixel size. */
     fun selectionOrNull(
         shape: AvatarCropShape,
         sourceSize: CropSourceSize,
@@ -117,31 +119,6 @@ class AvatarCropState {
                 imageOffset = if (nextSelectionRect.isEmpty) Offset.Zero else nextOffset,
                 maxScale = safeMaxScale,
             ),
-        )
-    }
-
-    internal fun updateConstraints(
-        maxScale: Float,
-    ) {
-        applyReconciledSnapshot(
-            snapshot.copy(
-                maxScale = maxScale.coerceAtLeast(1f),
-            ),
-        )
-    }
-
-    internal fun updateViewport(
-        containerSize: Size,
-        imageWidth: Float,
-        imageHeight: Float,
-        defaultInsetFraction: Float,
-    ) {
-        synchronize(
-            containerSize = containerSize,
-            imageWidth = imageWidth,
-            imageHeight = imageHeight,
-            defaultInsetFraction = defaultInsetFraction,
-            maxScale = snapshot.maxScale,
         )
     }
 
