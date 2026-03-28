@@ -4,6 +4,10 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.lortunate.syringacropper.cropperGridColor
+import com.lortunate.syringacropper.cropperHandleFillColor
+import com.lortunate.syringacropper.cropperHandleStrokeColor
+import com.lortunate.syringacropper.cropperMaskColor
 import com.lortunate.syringacropper.primaryColor
 
 @Immutable
@@ -15,7 +19,7 @@ enum class PerspectiveHandleShape {
 @Immutable
 data class PerspectiveMaskStyle(
     val drawOutsideQuad: Boolean = true,
-    val color: Color = Color.Black.copy(alpha = 0.55f),
+    val color: Color = cropperMaskColor,
 )
 
 @Immutable
@@ -27,7 +31,7 @@ data class PerspectiveFrameStyle(
     val gridStrokeWidth: Dp = 1.dp,
     val imageBoundsStrokeWidth: Dp = 1.dp,
     val color: Color = primaryColor,
-    val gridColor: Color = Color.White.copy(alpha = 0.35f),
+    val gridColor: Color = cropperGridColor,
     val imageBoundsColor: Color = primaryColor,
 )
 
@@ -38,10 +42,10 @@ data class PerspectiveCornerHandleStyle(
     val radius: Dp = 10.dp,
     val strokeWidth: Dp = 2.dp,
     val touchRadius: Dp = 36.dp,
-    val fillColor: Color = Color.White,
-    val strokeColor: Color = primaryColor,
-    val activeFillColor: Color = Color.White,
-    val activeStrokeColor: Color = primaryColor,
+    val fillColor: Color = cropperHandleFillColor,
+    val strokeColor: Color = cropperHandleStrokeColor,
+    val activeFillColor: Color = cropperHandleFillColor,
+    val activeStrokeColor: Color = cropperHandleStrokeColor,
 )
 
 @Immutable
@@ -54,10 +58,10 @@ data class PerspectiveEdgeHandleStyle(
     val touchLength: Dp = 56.dp,
     val touchThickness: Dp = 36.dp,
     val lengthFractionLimit: Float = 0.85f,
-    val fillColor: Color = Color.White,
-    val strokeColor: Color = primaryColor,
-    val activeFillColor: Color = Color.White,
-    val activeStrokeColor: Color = primaryColor,
+    val fillColor: Color = cropperHandleFillColor,
+    val strokeColor: Color = cropperHandleStrokeColor,
+    val activeFillColor: Color = cropperHandleFillColor,
+    val activeStrokeColor: Color = cropperHandleStrokeColor,
 )
 
 @Immutable

@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.lortunate.syringacropper.screen.AvatarCropScreen
 import com.lortunate.syringacropper.screen.HomeScreen
 import com.lortunate.syringacropper.screen.PerspectiveCropScreen
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -29,6 +30,9 @@ sealed interface NavRoute : NavKey {
 
     @Serializable
     data object PerspectiveCrop : NavRoute
+
+    @Serializable
+    data object AvatarCrop : NavRoute
 
 }
 
@@ -62,6 +66,10 @@ fun App() {
 
                         is NavRoute.PerspectiveCrop -> NavEntry(key) {
                             PerspectiveCropScreen()
+                        }
+
+                        is NavRoute.AvatarCrop -> NavEntry(key) {
+                            AvatarCropScreen()
                         }
 
                         else -> throw IllegalArgumentException("Unknown route: $key")

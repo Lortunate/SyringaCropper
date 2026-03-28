@@ -19,6 +19,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,22 +33,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.LocalNavBackStack
+import com.lortunate.syringacropper.avatar.AvatarCropShape
+import com.lortunate.syringacropper.avatar.AvatarCropState
+import com.lortunate.syringacropper.avatar.AvatarCropper
+import com.lortunate.syringacropper.avatar.rememberAvatarCropState
 import com.lortunate.syringacropper.formatDebugSummary
-import com.lortunate.syringacropper.perspective.PerspectiveCropState
-import com.lortunate.syringacropper.perspective.PerspectiveCropper
-import com.lortunate.syringacropper.perspective.rememberPerspectiveCropState
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerspectiveCropScreen() {
+fun AvatarCropScreen() {
     val navBackStack = LocalNavBackStack.current
-    val viewModel = viewModel { PerspectiveCropViewModel() }
+    val viewModel = viewModel { AvatarCropViewModel() }
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val previewBitmap = state.previewBitmap
-    val cropState = key(previewBitmap) { rememberPerspectiveCropState() }
+    val cropState = key(previewBitmap) { rememberAvatarCropState() }
 
     val imagePickerLauncher = rememberFilePickerLauncher(type = FileKitType.Image) { file ->
         viewModel.onImagePicked(file)
@@ -54,7 +58,7 @@ fun PerspectiveCropScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Perspective Crop") },
+                title = { Text("Avatar Crop") },
                 navigationIcon = {
                     IconButton(onClick = { navBackStack.removeLast() }) {
                         Icon(
@@ -73,7 +77,9 @@ fun PerspectiveCropScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ActionPanel(
+            AvatarActionPanel(
+                shape = state.shape,
+                onShapeChange = viewModel::updateShape,
                 onPickClick = { imagePickerLauncher.launch() },
                 onClearClick = viewModel::clearImageSelection,
                 onResetClick = {
@@ -83,14 +89,15 @@ fun PerspectiveCropScreen() {
                 onInspectClick = {
                     val sourceSize = state.sourceSize
                         ?: previewBitmap?.let { CropSourceSize(it.width, it.height) }
-                        ?: return@ActionPanel
-                    val inspectionResult = cropState.selectionOrNull(sourceSize)
-                        ?.formatDebugSummary()
-                        ?: "No active selection."
+                        ?: return@AvatarActionPanel
+                    val inspectionResult = cropState.selectionOrNull(
+                        shape = state.shape,
+                        sourceSize = sourceSize,
+                    )?.formatDebugSummary() ?: "No active selection."
                     viewModel.updateInspectionResult(inspectionResult)
                 },
                 canClear = state.canClear,
-                hasCropSelection = cropState.hasSelection
+                hasCropSelection = cropState.hasSelection,
             )
 
             if (state.isImageLoading) {
@@ -105,27 +112,30 @@ fun PerspectiveCropScreen() {
                 )
             }
 
-            CropperArea(
+            AvatarCropperArea(
                 modifier = Modifier.weight(1f),
                 imageBitmap = previewBitmap,
-                cropState = cropState
+                cropState = cropState,
+                shape = state.shape,
             )
 
             state.inspectionResult?.let { result ->
-                InspectionResultCard(result = result)
+                AvatarInspectionResultCard(result = result)
             }
         }
     }
 }
 
 @Composable
-private fun ActionPanel(
+private fun AvatarActionPanel(
+    shape: AvatarCropShape,
+    onShapeChange: (AvatarCropShape) -> Unit,
     onPickClick: () -> Unit,
     onClearClick: () -> Unit,
     onResetClick: () -> Unit,
     onInspectClick: () -> Unit,
     canClear: Boolean,
-    hasCropSelection: Boolean
+    hasCropSelection: Boolean,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
@@ -167,23 +177,63 @@ private fun ActionPanel(
                 Text("Inspect")
             }
         }
+
+        SelectionSegmentRow(
+            title = "Shape",
+            options = AvatarCropShape.entries,
+            selected = shape,
+            label = { option -> option.name.lowercase().replaceFirstChar(Char::titlecase) },
+            onSelected = onShapeChange,
+        )
     }
 }
 
 @Composable
-private fun CropperArea(
+private fun <T> SelectionSegmentRow(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelected: (T) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+        )
+
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            options.forEachIndexed { index, option ->
+                SegmentedButton(
+                    selected = option == selected,
+                    onClick = { onSelected(option) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                ) {
+                    Text(label(option))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarCropperArea(
     modifier: Modifier = Modifier,
     imageBitmap: ImageBitmap?,
-    cropState: PerspectiveCropState
+    cropState: AvatarCropState,
+    shape: AvatarCropShape,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
     ) {
         if (imageBitmap != null) {
-            PerspectiveCropper(
+            AvatarCropper(
                 imageBitmap = imageBitmap,
                 state = cropState,
+                shape = shape,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -191,7 +241,7 @@ private fun CropperArea(
 }
 
 @Composable
-private fun InspectionResultCard(result: String) {
+private fun AvatarInspectionResultCard(result: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

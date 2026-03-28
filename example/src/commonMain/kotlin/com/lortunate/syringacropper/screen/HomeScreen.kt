@@ -20,7 +20,8 @@ import com.lortunate.syringacropper.NavRoute
 
 
 enum class Examples(val title: String, val route: NavRoute) {
-    PERSPECTIVE_CROP("Perspective Crop", NavRoute.PerspectiveCrop)
+    PERSPECTIVE_CROP("Perspective Crop", NavRoute.PerspectiveCrop),
+    AVATAR_CROP("Avatar Crop", NavRoute.AvatarCrop),
 }
 
 

@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.PreviewImagePayload
+import com.lortunate.syringacropper.avatar.AvatarCropShape
 import com.lortunate.syringacropper.readPreviewImageOrNull
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.Dispatchers
@@ -13,20 +15,21 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class PerspectiveCropScreenState(
+data class AvatarCropScreenState(
     val previewBitmap: ImageBitmap? = null,
     val sourceSize: CropSourceSize? = null,
     val isImageLoading: Boolean = false,
     val imageLoadError: String? = null,
     val inspectionResult: String? = null,
+    val shape: AvatarCropShape = AvatarCropShape.CIRCLE,
 ) {
     val canClear: Boolean
         get() = !isImageLoading && (previewBitmap != null || imageLoadError != null || inspectionResult != null)
 }
 
-class PerspectiveCropViewModel : ViewModel() {
+class AvatarCropViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(PerspectiveCropScreenState())
+    private val _state = MutableStateFlow(AvatarCropScreenState())
     val state = _state.asStateFlow()
 
     fun onImagePicked(file: PlatformFile?) {
@@ -41,7 +44,7 @@ class PerspectiveCropViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            val imagePayload = withContext(Dispatchers.Default) {
+            val imagePayload: PreviewImagePayload? = withContext(Dispatchers.Default) {
                 file.readPreviewImageOrNull()
             }
 
@@ -57,10 +60,14 @@ class PerspectiveCropViewModel : ViewModel() {
     }
 
     fun clearImageSelection() {
-        _state.value = PerspectiveCropScreenState()
+        _state.value = AvatarCropScreenState(shape = _state.value.shape)
     }
 
     fun updateInspectionResult(result: String?) {
         _state.update { it.copy(inspectionResult = result) }
+    }
+
+    fun updateShape(shape: AvatarCropShape) {
+        _state.update { it.copy(shape = shape, inspectionResult = null) }
     }
 }

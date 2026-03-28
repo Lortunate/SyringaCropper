@@ -1,17 +1,18 @@
 package com.lortunate.syringacropper
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
+import com.lortunate.syringacropper.avatar.AvatarCropSelection
 import com.lortunate.syringacropper.perspective.PerspectiveCropSelection
 import com.lortunate.syringacropper.perspective.PerspectiveQuad
-import com.lortunate.syringacropper.perspective.PerspectiveSourceSize
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.readBytes
 import kotlin.math.roundToInt
 
 internal data class PreviewImagePayload(
     val previewBitmap: ImageBitmap,
-    val sourceSize: PerspectiveSourceSize,
+    val sourceSize: CropSourceSize,
 )
 
 internal suspend fun PlatformFile.readPreviewImageOrNull() =
@@ -26,6 +27,19 @@ internal fun PerspectiveCropSelection.formatDebugSummary(): String {
         appendLine()
         appendLine("Normalized Quad")
         append(normalizedQuad.formatDebugSummary())
+    }
+}
+
+internal fun AvatarCropSelection.formatDebugSummary(): String {
+    return buildString {
+        appendLine("Shape")
+        appendLine(shape.name)
+        appendLine()
+        appendLine("Image Rect")
+        appendLine(imageRect.formatRect())
+        appendLine()
+        appendLine("Normalized Rect")
+        append(normalizedRect.formatRect())
     }
 }
 
@@ -47,6 +61,10 @@ internal fun PerspectiveQuad.formatDebugSummary(): String {
 
 private fun Offset.formatPair(): String {
     return "(${x.formatValue()}, ${y.formatValue()})"
+}
+
+private fun Rect.formatRect(): String {
+    return "(${left.formatValue()}, ${top.formatValue()}, ${right.formatValue()}, ${bottom.formatValue()})"
 }
 
 private fun Float.formatValue(): String {

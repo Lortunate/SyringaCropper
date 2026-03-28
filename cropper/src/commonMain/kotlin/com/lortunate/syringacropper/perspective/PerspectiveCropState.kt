@@ -1,5 +1,6 @@
 package com.lortunate.syringacropper.perspective
 
+import com.lortunate.syringacropper.CropSourceSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -31,22 +32,11 @@ data class PerspectiveQuad(
     val bottomLeft: Offset,
 )
 
-/** Original image size used to convert normalized selections into pixel-space quads. */
-data class PerspectiveSourceSize(
-    val width: Int,
-    val height: Int,
-) {
-    init {
-        require(width > 0) { "width must be > 0 but was $width" }
-        require(height > 0) { "height must be > 0 but was $height" }
-    }
-}
-
 /** Snapshot of the current selection in both normalized and original-image coordinate spaces. */
 data class PerspectiveCropSelection(
     val imageQuad: PerspectiveQuad,
     val normalizedQuad: PerspectiveQuad,
-    val sourceSize: PerspectiveSourceSize,
+    val sourceSize: CropSourceSize,
 )
 
 /** Creates and remembers a [PerspectiveCropState] for a single cropper session. */
@@ -99,12 +89,12 @@ class PerspectiveCropState {
     }
 
     /** Returns the current selection in original-image pixel coordinates. */
-    fun imageQuadOrNull(sourceSize: PerspectiveSourceSize): PerspectiveQuad? {
+    fun imageQuadOrNull(sourceSize: CropSourceSize): PerspectiveQuad? {
         return normalizedQuadOrNull()?.toImageSpace(sourceSize)
     }
 
     /** Returns the recommended selection snapshot for downstream consumers. */
-    fun selectionOrNull(sourceSize: PerspectiveSourceSize): PerspectiveCropSelection? {
+    fun selectionOrNull(sourceSize: CropSourceSize): PerspectiveCropSelection? {
         val normalizedQuad = normalizedQuadOrNull() ?: return null
         return PerspectiveCropSelection(
             imageQuad = normalizedQuad.toImageSpace(sourceSize),

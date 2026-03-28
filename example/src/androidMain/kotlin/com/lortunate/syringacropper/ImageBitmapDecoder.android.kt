@@ -3,7 +3,6 @@ package com.lortunate.syringacropper
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.asImageBitmap
-import com.lortunate.syringacropper.perspective.PerspectiveSourceSize
 import kotlin.math.ceil
 import kotlin.math.log2
 
@@ -32,7 +31,7 @@ internal actual fun decodePreviewImage(bytes: ByteArray): PreviewImagePayload? {
         ?: return null
     return PreviewImagePayload(
         previewBitmap = previewBitmap,
-        sourceSize = PerspectiveSourceSize(width = width, height = height),
+        sourceSize = CropSourceSize(width = width, height = height),
     )
 }
 
