@@ -27,8 +27,9 @@ internal actual fun decodePreviewImage(bytes: ByteArray): PreviewImagePayload? {
         this.inSampleSize = inSampleSize
     }
 
-    val previewBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)?.asImageBitmap()
-        ?: return null
+    val previewBitmap =
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)?.asImageBitmap()
+            ?: return null
     return PreviewImagePayload(
         previewBitmap = previewBitmap,
         sourceSize = CropSourceSize(width = width, height = height),
