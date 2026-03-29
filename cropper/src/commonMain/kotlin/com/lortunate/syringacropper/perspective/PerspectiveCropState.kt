@@ -9,20 +9,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.CropperHandle
+import com.lortunate.syringacropper.coerceTo
+import com.lortunate.syringacropper.distanceSquared
+import com.lortunate.syringacropper.remap
+import com.lortunate.syringacropper.scale
+import com.lortunate.syringacropper.toNormalized
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-
-enum class PerspectiveHandle {
-    TOP_LEFT,
-    TOP_RIGHT,
-    BOTTOM_RIGHT,
-    BOTTOM_LEFT,
-    TOP_EDGE,
-    RIGHT_EDGE,
-    BOTTOM_EDGE,
-    LEFT_EDGE,
-}
 
 /** UI-space quad used by the cropper and by exported crop selections. */
 data class PerspectiveQuad(
@@ -61,7 +56,7 @@ class PerspectiveCropState {
     internal val imageRect: Rect
         get() = cropState.imageRect
 
-    internal val activeHandle: PerspectiveHandle?
+    internal val activeHandle: CropperHandle?
         get() = dragState.activeHandle
 
     /** Clears the current selection and any in-progress drag state. */
@@ -74,8 +69,8 @@ class PerspectiveCropState {
     /** Recreates the default selection inside the current image rect. */
     fun resetSelection(insetFraction: Float = 0f) {
         clearSelection()
-        PerspectiveQuadConstraints.defaultQuad(cropState.imageRect, insetFraction)
-            ?.let(::commitQuad)
+        PerspectiveQuadConstraints
+            .defaultQuad(cropState.imageRect, insetFraction)?.let(::commitQuad)
     }
 
     /** Returns the current selection normalized to the original image in the 0..1 range. */
@@ -131,7 +126,7 @@ class PerspectiveCropState {
             ?.let(::commitQuad)
     }
 
-    internal fun dragHandleBy(handle: PerspectiveHandle, delta: Offset): Boolean {
+    internal fun dragHandleBy(handle: CropperHandle, delta: Offset): Boolean {
         val candidate = handleInteractor.dragHandleBy(
             quad = cropState.quad,
             imageRect = cropState.imageRect,
@@ -205,7 +200,7 @@ class PerspectiveCropState {
     }
 
     internal fun edgeGeometry(
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         edgeLengthPx: Float,
         edgeThicknessPx: Float,
         edgeLengthFractionLimit: Float,
@@ -235,7 +230,7 @@ class PerspectiveCropState {
 }
 
 private data class PerspectiveDragState(
-    val activeHandle: PerspectiveHandle? = null,
+    val activeHandle: CropperHandle? = null,
     val draggingQuad: Boolean = false,
     val retryHandleOnFirstDrag: Boolean = false,
 )
@@ -414,36 +409,36 @@ private object PerspectiveQuadConstraints {
 
 private class PerspectiveHandleInteractor {
     private val cornerHandles = listOf(
-        PerspectiveHandle.TOP_LEFT,
-        PerspectiveHandle.TOP_RIGHT,
-        PerspectiveHandle.BOTTOM_RIGHT,
-        PerspectiveHandle.BOTTOM_LEFT,
+        CropperHandle.TOP_LEFT,
+        CropperHandle.TOP_RIGHT,
+        CropperHandle.BOTTOM_RIGHT,
+        CropperHandle.BOTTOM_LEFT,
     )
     private val edgeBindings = listOf(
         EdgeBinding(
-            PerspectiveHandle.TOP_EDGE,
-            PerspectiveHandle.TOP_LEFT,
-            PerspectiveHandle.TOP_RIGHT
+            CropperHandle.TOP_EDGE,
+            CropperHandle.TOP_LEFT,
+            CropperHandle.TOP_RIGHT
         ),
         EdgeBinding(
-            PerspectiveHandle.RIGHT_EDGE,
-            PerspectiveHandle.TOP_RIGHT,
-            PerspectiveHandle.BOTTOM_RIGHT
+            CropperHandle.RIGHT_EDGE,
+            CropperHandle.TOP_RIGHT,
+            CropperHandle.BOTTOM_RIGHT
         ),
         EdgeBinding(
-            PerspectiveHandle.BOTTOM_EDGE,
-            PerspectiveHandle.BOTTOM_LEFT,
-            PerspectiveHandle.BOTTOM_RIGHT
+            CropperHandle.BOTTOM_EDGE,
+            CropperHandle.BOTTOM_LEFT,
+            CropperHandle.BOTTOM_RIGHT
         ),
         EdgeBinding(
-            PerspectiveHandle.LEFT_EDGE,
-            PerspectiveHandle.TOP_LEFT,
-            PerspectiveHandle.BOTTOM_LEFT
+            CropperHandle.LEFT_EDGE,
+            CropperHandle.TOP_LEFT,
+            CropperHandle.BOTTOM_LEFT
         ),
     )
     private val edgeBindingByHandle = edgeBindings.associateBy(EdgeBinding::edgeHandle)
 
-    private var edgeGeometryCache: Map<PerspectiveHandle, CachedEdgeGeometry> = emptyMap()
+    private var edgeGeometryCache: Map<CropperHandle, CachedEdgeGeometry> = emptyMap()
 
     fun updateQuad(quad: PerspectiveQuad?) {
         edgeGeometryCache = quad?.let { currentQuad ->
@@ -457,7 +452,7 @@ private class PerspectiveHandleInteractor {
     }
 
     fun edgeGeometry(
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         edgeLengthPx: Float,
         edgeThicknessPx: Float,
         edgeLengthFractionLimit: Float,
@@ -471,10 +466,10 @@ private class PerspectiveHandleInteractor {
         quad: PerspectiveQuad?,
         point: Offset,
         config: PerspectiveGestureConfig,
-    ): PerspectiveHandle? {
+    ): CropperHandle? {
         if (quad == null) return null
 
-        var selected: PerspectiveHandle? = null
+        var selected: CropperHandle? = null
         var minDistanceSquared = Float.MAX_VALUE
         val pointX = point.x
         val pointY = point.y
@@ -520,7 +515,7 @@ private class PerspectiveHandleInteractor {
     fun dragHandleBy(
         quad: PerspectiveQuad?,
         imageRect: Rect,
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         delta: Offset,
         minEdgeLengthPx: Float,
         constraintSolveSteps: Int,
@@ -563,14 +558,14 @@ private class PerspectiveHandleInteractor {
     private fun candidateQuadForHandleDelta(
         sourceQuad: PerspectiveQuad,
         imageRect: Rect,
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         delta: Offset,
         minEdgeLengthPx: Float,
     ): PerspectiveQuad? = when (handle) {
-        PerspectiveHandle.TOP_LEFT,
-        PerspectiveHandle.TOP_RIGHT,
-        PerspectiveHandle.BOTTOM_RIGHT,
-        PerspectiveHandle.BOTTOM_LEFT,
+        CropperHandle.TOP_LEFT,
+        CropperHandle.TOP_RIGHT,
+        CropperHandle.BOTTOM_RIGHT,
+        CropperHandle.BOTTOM_LEFT,
             -> candidateQuadWithCorner(
             sourceQuad = sourceQuad,
             imageRect = imageRect,
@@ -579,10 +574,10 @@ private class PerspectiveHandleInteractor {
             minEdgeLengthPx = minEdgeLengthPx,
         )
 
-        PerspectiveHandle.TOP_EDGE,
-        PerspectiveHandle.RIGHT_EDGE,
-        PerspectiveHandle.BOTTOM_EDGE,
-        PerspectiveHandle.LEFT_EDGE,
+        CropperHandle.TOP_EDGE,
+        CropperHandle.RIGHT_EDGE,
+        CropperHandle.BOTTOM_EDGE,
+        CropperHandle.LEFT_EDGE,
             -> candidateQuadForEdgeDelta(
             sourceQuad = sourceQuad,
             imageRect = imageRect,
@@ -595,20 +590,20 @@ private class PerspectiveHandleInteractor {
     private fun candidateQuadWithCorner(
         sourceQuad: PerspectiveQuad,
         imageRect: Rect,
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         target: Offset,
         minEdgeLengthPx: Float,
     ): PerspectiveQuad? {
         val clampedTarget = target.coerceTo(imageRect)
         val candidate = when (handle) {
-            PerspectiveHandle.TOP_LEFT -> sourceQuad.copy(topLeft = clampedTarget)
-            PerspectiveHandle.TOP_RIGHT -> sourceQuad.copy(topRight = clampedTarget)
-            PerspectiveHandle.BOTTOM_RIGHT -> sourceQuad.copy(bottomRight = clampedTarget)
-            PerspectiveHandle.BOTTOM_LEFT -> sourceQuad.copy(bottomLeft = clampedTarget)
-            PerspectiveHandle.TOP_EDGE,
-            PerspectiveHandle.RIGHT_EDGE,
-            PerspectiveHandle.BOTTOM_EDGE,
-            PerspectiveHandle.LEFT_EDGE,
+            CropperHandle.TOP_LEFT -> sourceQuad.copy(topLeft = clampedTarget)
+            CropperHandle.TOP_RIGHT -> sourceQuad.copy(topRight = clampedTarget)
+            CropperHandle.BOTTOM_RIGHT -> sourceQuad.copy(bottomRight = clampedTarget)
+            CropperHandle.BOTTOM_LEFT -> sourceQuad.copy(bottomLeft = clampedTarget)
+            CropperHandle.TOP_EDGE,
+            CropperHandle.RIGHT_EDGE,
+            CropperHandle.BOTTOM_EDGE,
+            CropperHandle.LEFT_EDGE,
                 -> return null
         }
         return candidate.takeIf { PerspectiveQuadConstraints.isValid(it, minEdgeLengthPx) }
@@ -617,7 +612,7 @@ private class PerspectiveHandleInteractor {
     private fun candidateQuadForEdgeDelta(
         sourceQuad: PerspectiveQuad,
         imageRect: Rect,
-        handle: PerspectiveHandle,
+        handle: CropperHandle,
         delta: Offset,
         minEdgeLengthPx: Float,
     ): PerspectiveQuad? {
@@ -630,26 +625,26 @@ private class PerspectiveHandleInteractor {
         val movedEnd = (edgeEnd + edgeDelta).coerceTo(imageRect)
 
         val candidate = when (handle) {
-            PerspectiveHandle.TOP_EDGE -> sourceQuad.copy(topLeft = movedStart, topRight = movedEnd)
-            PerspectiveHandle.RIGHT_EDGE -> sourceQuad.copy(
+            CropperHandle.TOP_EDGE -> sourceQuad.copy(topLeft = movedStart, topRight = movedEnd)
+            CropperHandle.RIGHT_EDGE -> sourceQuad.copy(
                 topRight = movedStart,
                 bottomRight = movedEnd
             )
 
-            PerspectiveHandle.BOTTOM_EDGE -> sourceQuad.copy(
+            CropperHandle.BOTTOM_EDGE -> sourceQuad.copy(
                 bottomRight = movedEnd,
                 bottomLeft = movedStart
             )
 
-            PerspectiveHandle.LEFT_EDGE -> sourceQuad.copy(
+            CropperHandle.LEFT_EDGE -> sourceQuad.copy(
                 topLeft = movedStart,
                 bottomLeft = movedEnd
             )
 
-            PerspectiveHandle.TOP_LEFT,
-            PerspectiveHandle.TOP_RIGHT,
-            PerspectiveHandle.BOTTOM_RIGHT,
-            PerspectiveHandle.BOTTOM_LEFT,
+            CropperHandle.TOP_LEFT,
+            CropperHandle.TOP_RIGHT,
+            CropperHandle.BOTTOM_RIGHT,
+            CropperHandle.BOTTOM_LEFT,
                 -> return null
         }
         return candidate.takeIf { PerspectiveQuadConstraints.isValid(it, minEdgeLengthPx) }
@@ -657,20 +652,20 @@ private class PerspectiveHandleInteractor {
 }
 
 private data class EdgeBinding(
-    val edgeHandle: PerspectiveHandle,
-    val startCorner: PerspectiveHandle,
-    val endCorner: PerspectiveHandle,
+    val edgeHandle: CropperHandle,
+    val startCorner: CropperHandle,
+    val endCorner: CropperHandle,
 )
 
-internal fun PerspectiveQuad.cornerOffset(handle: PerspectiveHandle): Offset = when (handle) {
-    PerspectiveHandle.TOP_LEFT -> topLeft
-    PerspectiveHandle.TOP_RIGHT -> topRight
-    PerspectiveHandle.BOTTOM_RIGHT -> bottomRight
-    PerspectiveHandle.BOTTOM_LEFT -> bottomLeft
-    PerspectiveHandle.TOP_EDGE,
-    PerspectiveHandle.RIGHT_EDGE,
-    PerspectiveHandle.BOTTOM_EDGE,
-    PerspectiveHandle.LEFT_EDGE,
+internal fun PerspectiveQuad.cornerOffset(handle: CropperHandle): Offset = when (handle) {
+    CropperHandle.TOP_LEFT -> topLeft
+    CropperHandle.TOP_RIGHT -> topRight
+    CropperHandle.BOTTOM_RIGHT -> bottomRight
+    CropperHandle.BOTTOM_LEFT -> bottomLeft
+    CropperHandle.TOP_EDGE,
+    CropperHandle.RIGHT_EDGE,
+    CropperHandle.BOTTOM_EDGE,
+    CropperHandle.LEFT_EDGE,
         -> error("Expected corner handle but got edge handle: $handle")
 }
 
@@ -679,20 +674,4 @@ private fun PerspectiveQuad.translateBy(delta: Offset): PerspectiveQuad = Perspe
     topRight = topRight + delta,
     bottomRight = bottomRight + delta,
     bottomLeft = bottomLeft + delta,
-)
-
-private fun Offset.remap(source: Rect, target: Rect): Offset {
-    if (source.width <= 0f || source.height <= 0f) return this
-
-    val normalizedX = ((x - source.left) / source.width).coerceIn(0f, 1f)
-    val normalizedY = ((y - source.top) / source.height).coerceIn(0f, 1f)
-    return Offset(
-        x = target.left + normalizedX * target.width,
-        y = target.top + normalizedY * target.height,
-    )
-}
-
-private fun Offset.toNormalized(rect: Rect): Offset = Offset(
-    x = ((x - rect.left) / rect.width).coerceIn(0f, 1f),
-    y = ((y - rect.top) / rect.height).coerceIn(0f, 1f),
 )

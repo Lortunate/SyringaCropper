@@ -1,29 +1,24 @@
-package com.lortunate.syringacropper.perspective
+package com.lortunate.syringacropper
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.lortunate.syringacropper.cropperGridColor
-import com.lortunate.syringacropper.cropperHandleFillColor
-import com.lortunate.syringacropper.cropperHandleStrokeColor
-import com.lortunate.syringacropper.cropperMaskColor
-import com.lortunate.syringacropper.primaryColor
 
+/**
+ * Common style for the cropper mask (the semi-transparent overlay).
+ */
 @Immutable
-enum class PerspectiveHandleShape {
-    CIRCLE,
-    SQUARE,
-}
-
-@Immutable
-data class PerspectiveMaskStyle(
-    val drawOutsideQuad: Boolean = true,
+data class CropperMaskStyle(
+    val drawOutside: Boolean = true,
     val color: Color = cropperMaskColor,
 )
 
+/**
+ * Common style for the cropper frame and grid lines.
+ */
 @Immutable
-data class PerspectiveFrameStyle(
+data class CropperFrameStyle(
     val showGrid: Boolean = true,
     val gridLineCount: Int = 2,
     val showImageBounds: Boolean = false,
@@ -35,10 +30,13 @@ data class PerspectiveFrameStyle(
     val imageBoundsColor: Color = primaryColor,
 )
 
+/**
+ * Style for corner handles.
+ */
 @Immutable
-data class PerspectiveCornerHandleStyle(
+data class CropperCornerHandleStyle(
     val visible: Boolean = true,
-    val shape: PerspectiveHandleShape = PerspectiveHandleShape.CIRCLE,
+    val shape: CropperHandleShape = CropperHandleShape.CIRCLE,
     val radius: Dp = 10.dp,
     val strokeWidth: Dp = 2.dp,
     val touchRadius: Dp = 36.dp,
@@ -48,8 +46,11 @@ data class PerspectiveCornerHandleStyle(
     val activeStrokeColor: Color = cropperHandleStrokeColor,
 )
 
+/**
+ * Style for edge handles.
+ */
 @Immutable
-data class PerspectiveEdgeHandleStyle(
+data class CropperEdgeHandleStyle(
     val visible: Boolean = true,
     val length: Dp = 40.dp,
     val thickness: Dp = 12.dp,
@@ -64,15 +65,27 @@ data class PerspectiveEdgeHandleStyle(
     val activeStrokeColor: Color = cropperHandleStrokeColor,
 )
 
+/**
+ * Combined handle style.
+ */
 @Immutable
-data class PerspectiveHandleStyle(
-    val corner: PerspectiveCornerHandleStyle = PerspectiveCornerHandleStyle(),
-    val edge: PerspectiveEdgeHandleStyle = PerspectiveEdgeHandleStyle(),
+data class CropperHandleStyle(
+    val corner: CropperCornerHandleStyle = CropperCornerHandleStyle(),
+    val edge: CropperEdgeHandleStyle = CropperEdgeHandleStyle(),
 )
 
 @Immutable
-data class PerspectiveStyle(
-    val frame: PerspectiveFrameStyle = PerspectiveFrameStyle(),
-    val handle: PerspectiveHandleStyle = PerspectiveHandleStyle(),
-    val mask: PerspectiveMaskStyle = PerspectiveMaskStyle(),
+data class CropperStyle(
+    val frame: CropperFrameStyle = CropperFrameStyle(),
+    val handle: CropperHandleStyle = CropperHandleStyle(),
+    val mask: CropperMaskStyle = CropperMaskStyle(),
+)
+
+/**
+ * Specialized style for avatar cropper (no handles).
+ */
+@Immutable
+data class AvatarCropStyle(
+    val frame: CropperFrameStyle = CropperFrameStyle(),
+    val mask: CropperMaskStyle = CropperMaskStyle(),
 )

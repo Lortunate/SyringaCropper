@@ -4,6 +4,10 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import com.lortunate.syringacropper.DEFAULT_MAX_SELECTION_INSET
+import com.lortunate.syringacropper.center
+import com.lortunate.syringacropper.isEmptySize
+import com.lortunate.syringacropper.squareRect
 import kotlin.math.max
 import kotlin.math.min
 
@@ -18,25 +22,6 @@ internal data class AvatarImageTransform(
     val offset: Offset,
     val imageRect: Rect,
 )
-
-private const val MAX_SELECTION_INSET_FRACTION = 0.45f
-
-internal fun calculateBaseImageRect(
-    containerSize: Size,
-    imageWidth: Float,
-    imageHeight: Float,
-): Rect {
-    if (containerSize.isEmptySize() || imageWidth <= 0f || imageHeight <= 0f) {
-        return Rect.Zero
-    }
-
-    val scale = min(containerSize.width / imageWidth, containerSize.height / imageHeight)
-    val drawWidth = imageWidth * scale
-    val drawHeight = imageHeight * scale
-    val left = (containerSize.width - drawWidth) * 0.5f
-    val top = (containerSize.height - drawHeight) * 0.5f
-    return Rect(left, top, left + drawWidth, top + drawHeight)
-}
 
 internal fun defaultSelectionRect(
     containerSize: Size,
@@ -225,31 +210,8 @@ internal fun transformImageWithGesture(
     )
 }
 
-internal fun normalizedRect(
-    selectionRect: Rect,
-    imageRect: Rect,
-): Rect? {
-    if (selectionRect.isEmpty || imageRect.isEmpty) return null
-    return Rect(
-        left = ((selectionRect.left - imageRect.left) / imageRect.width).coerceIn(0f, 1f),
-        top = ((selectionRect.top - imageRect.top) / imageRect.height).coerceIn(0f, 1f),
-        right = ((selectionRect.right - imageRect.left) / imageRect.width).coerceIn(0f, 1f),
-        bottom = ((selectionRect.bottom - imageRect.top) / imageRect.height).coerceIn(0f, 1f),
-    )
-}
-
-internal fun squareRect(center: Offset, side: Float): Rect {
-    val halfSide = side * 0.5f
-    return Rect(
-        left = center.x - halfSide,
-        top = center.y - halfSide,
-        right = center.x + halfSide,
-        bottom = center.y + halfSide,
-    )
-}
-
 internal fun normalizedSelectionInsetFraction(insetFraction: Float): Float {
-    return insetFraction.coerceIn(0f, MAX_SELECTION_INSET_FRACTION)
+    return insetFraction.coerceIn(0f, DEFAULT_MAX_SELECTION_INSET)
 }
 
 private fun imageSizeForScale(baseImageRect: Rect, scale: Float): Size {
@@ -271,8 +233,3 @@ private fun resolvedImageScale(
         maximumValue = maxOf(maxScale.coerceAtLeast(1f), minimumScale),
     )
 }
-
-internal val Size.center: Offset
-    get() = Offset(width * 0.5f, height * 0.5f)
-
-internal fun Size.isEmptySize(): Boolean = width <= 0f || height <= 0f

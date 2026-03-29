@@ -23,35 +23,30 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import com.lortunate.syringacropper.CropperCornerHandleStyle
+import com.lortunate.syringacropper.CropperDrawMetrics
+import com.lortunate.syringacropper.CropperEdgeHandleGeometry
+import com.lortunate.syringacropper.CropperEdgeHandleStyle
+import com.lortunate.syringacropper.CropperHandle
+import com.lortunate.syringacropper.CropperStyle
+import com.lortunate.syringacropper.PerspectiveInteractionConfig
+import com.lortunate.syringacropper.calculateImageFitRect
+import com.lortunate.syringacropper.drawCropperCornerHandleMarker
+import com.lortunate.syringacropper.drawCropperEdgeHandleMarker
+import com.lortunate.syringacropper.rememberCropperDrawMetrics
 
 private val CORNER_DRAW_ORDER = listOf(
-    PerspectiveHandle.TOP_LEFT,
-    PerspectiveHandle.TOP_RIGHT,
-    PerspectiveHandle.BOTTOM_RIGHT,
-    PerspectiveHandle.BOTTOM_LEFT,
+    CropperHandle.TOP_LEFT,
+    CropperHandle.TOP_RIGHT,
+    CropperHandle.BOTTOM_RIGHT,
+    CropperHandle.BOTTOM_LEFT,
 )
 
 private val EDGE_DRAW_ORDER = listOf(
-    PerspectiveHandle.TOP_EDGE,
-    PerspectiveHandle.RIGHT_EDGE,
-    PerspectiveHandle.BOTTOM_EDGE,
-    PerspectiveHandle.LEFT_EDGE,
-)
-
-private data class PerspectiveDrawMetrics(
-    val frameStrokePx: Float,
-    val gridStrokePx: Float,
-    val imageBoundsStrokePx: Float,
-    val cornerRadiusPx: Float,
-    val cornerStrokePx: Float,
-    val cornerTouchRadiusPx: Float,
-    val edgeLengthPx: Float,
-    val edgeThicknessPx: Float,
-    val edgeCornerRadiusPx: Float,
-    val edgeStrokePx: Float,
-    val edgeTouchLengthPx: Float,
-    val edgeTouchThicknessPx: Float,
-    val minEdgeLengthPx: Float,
+    CropperHandle.TOP_EDGE,
+    CropperHandle.RIGHT_EDGE,
+    CropperHandle.BOTTOM_EDGE,
+    CropperHandle.LEFT_EDGE,
 )
 
 @Composable
@@ -59,39 +54,47 @@ fun PerspectiveCropper(
     imageBitmap: ImageBitmap,
     state: PerspectiveCropState,
     modifier: Modifier = Modifier,
-    style: PerspectiveStyle = PerspectiveStyle(),
+    style: CropperStyle = CropperStyle(),
     interaction: PerspectiveInteractionConfig = PerspectiveInteractionConfig(),
 ) {
     val (containerSize, updateContainerSize) = remember { mutableStateOf(Size.Zero) }
-    val drawMetrics = rememberDrawMetrics(style, interaction)
-    val edgeLengthFractionLimit = clampEdgeLengthFractionLimit(style.handle.edge.lengthFractionLimit)
-    val gestureConfig = remember(drawMetrics, edgeLengthFractionLimit, style, interaction) {
-        PerspectiveGestureConfig(
-            cornerThresholdPx = drawMetrics.cornerTouchRadiusPx,
-            edgeLengthPx = drawMetrics.edgeTouchLengthPx,
-            edgeThicknessPx = drawMetrics.edgeTouchThicknessPx,
-            edgeCornerRadiusPx = drawMetrics.edgeCornerRadiusPx,
-            edgeLengthFractionLimit = edgeLengthFractionLimit,
-            enableCornerHandles = style.handle.corner.visible,
-            enableEdgeHandles = style.handle.edge.visible,
-            enableQuadDrag = interaction.enableQuadDrag,
-        )
-    }
+    val drawMetrics = rememberCropperDrawMetrics(style)
+    val edgeLengthFractionLimit =
+        clampEdgeLengthFractionLimit(style.handle.edge.lengthFractionLimit)
+
+    val density = LocalDensity.current
+    val gestureConfig =
+        remember(drawMetrics, edgeLengthFractionLimit, style, interaction, density) {
+            with(density) {
+                PerspectiveGestureConfig(
+                    cornerThresholdPx = style.handle.corner.touchRadius.toPx(),
+                    edgeLengthPx = style.handle.edge.touchLength.toPx(),
+                    edgeThicknessPx = style.handle.edge.touchThickness.toPx(),
+                    edgeCornerRadiusPx = style.handle.edge.cornerRadius.toPx(),
+                    edgeLengthFractionLimit = edgeLengthFractionLimit,
+                    enableCornerHandles = style.handle.corner.visible,
+                    enableEdgeHandles = style.handle.edge.visible,
+                    enableQuadDrag = interaction.enableQuadDrag,
+                )
+            }
+        }
 
     val quadPath = remember { Path() }
     val maskPath = remember { Path() }
 
     val imageRect = remember(containerSize, imageBitmap.width, imageBitmap.height) {
-        calculateImageRect(
+        calculateImageFitRect(
             containerSize = containerSize,
             imageWidth = imageBitmap.width.toFloat(),
             imageHeight = imageBitmap.height.toFloat(),
         )
     }
 
-    LaunchedEffect(drawMetrics.minEdgeLengthPx, interaction.constraintSolveSteps) {
+    val minEdgeLengthPx = with(density) { interaction.minEdgeLength.toPx() }
+
+    LaunchedEffect(minEdgeLengthPx, interaction.constraintSolveSteps) {
         state.updateConstraints(
-            minEdgeLengthPx = drawMetrics.minEdgeLengthPx,
+            minEdgeLengthPx = minEdgeLengthPx,
             constraintSolveSteps = interaction.constraintSolveSteps,
         )
     }
@@ -135,33 +138,6 @@ fun PerspectiveCropper(
     }
 }
 
-@Composable
-private fun rememberDrawMetrics(
-    style: PerspectiveStyle,
-    interaction: PerspectiveInteractionConfig,
-): PerspectiveDrawMetrics {
-    val density = LocalDensity.current
-    return remember(style, interaction, density) {
-        with(density) {
-            PerspectiveDrawMetrics(
-                frameStrokePx = style.frame.strokeWidth.toPx(),
-                gridStrokePx = style.frame.gridStrokeWidth.toPx(),
-                imageBoundsStrokePx = style.frame.imageBoundsStrokeWidth.toPx(),
-                cornerRadiusPx = style.handle.corner.radius.toPx(),
-                cornerStrokePx = style.handle.corner.strokeWidth.toPx(),
-                cornerTouchRadiusPx = style.handle.corner.touchRadius.toPx(),
-                edgeLengthPx = style.handle.edge.length.toPx(),
-                edgeThicknessPx = style.handle.edge.thickness.toPx(),
-                edgeCornerRadiusPx = style.handle.edge.cornerRadius.toPx(),
-                edgeStrokePx = style.handle.edge.strokeWidth.toPx(),
-                edgeTouchLengthPx = style.handle.edge.touchLength.toPx(),
-                edgeTouchThicknessPx = style.handle.edge.touchThickness.toPx(),
-                minEdgeLengthPx = interaction.minEdgeLength.toPx(),
-            )
-        }
-    }
-}
-
 private fun Modifier.perspectiveDragGestures(
     state: PerspectiveCropState,
     config: PerspectiveGestureConfig,
@@ -181,8 +157,8 @@ private fun Modifier.perspectiveDragGestures(
 private fun DrawScope.drawPerspectiveOverlay(
     state: PerspectiveCropState,
     imageRect: Rect,
-    style: PerspectiveStyle,
-    drawMetrics: PerspectiveDrawMetrics,
+    style: CropperStyle,
+    drawMetrics: CropperDrawMetrics,
     edgeLengthFractionLimit: Float,
     quadPath: Path,
     maskPath: Path,
@@ -200,7 +176,7 @@ private fun DrawScope.drawPerspectiveOverlay(
         bottomLeft = quad.bottomLeft,
     )
 
-    if (style.mask.drawOutsideQuad) {
+    if (style.mask.drawOutside) {
         maskPath.reset()
         maskPath.fillType = PathFillType.EvenOdd
         maskPath.addRect(Rect(Offset.Zero, size))
@@ -208,7 +184,11 @@ private fun DrawScope.drawPerspectiveOverlay(
         drawPath(path = maskPath, color = style.mask.color, style = Fill)
     }
 
-    drawPath(path = quadPath, color = style.frame.color, style = Stroke(width = drawMetrics.frameStrokePx))
+    drawPath(
+        path = quadPath,
+        color = style.frame.color,
+        style = Stroke(width = drawMetrics.frameStrokePx)
+    )
 
     if (style.frame.showGrid && style.frame.gridLineCount > 0) {
         drawPerspectiveGrid(
@@ -264,14 +244,14 @@ private fun DrawScope.drawPerspectiveOverlay(
 }
 
 private fun DrawScope.drawCornerHandle(
-    handle: PerspectiveHandle,
+    handle: CropperHandle,
     center: Offset,
-    activeHandle: PerspectiveHandle?,
-    cornerStyle: PerspectiveCornerHandleStyle,
-    drawMetrics: PerspectiveDrawMetrics,
+    activeHandle: CropperHandle?,
+    cornerStyle: CropperCornerHandleStyle,
+    drawMetrics: CropperDrawMetrics,
 ) {
     val isActive = activeHandle == handle
-    drawCornerHandleMarker(
+    drawCropperCornerHandleMarker(
         center = center,
         shape = cornerStyle.shape,
         radius = drawMetrics.cornerRadiusPx,
@@ -282,35 +262,23 @@ private fun DrawScope.drawCornerHandle(
 }
 
 private fun DrawScope.drawEdgeHandle(
-    handle: PerspectiveHandle,
+    handle: CropperHandle,
     geometry: CenteredEdgeBarGeometry,
-    activeHandle: PerspectiveHandle?,
-    edgeStyle: PerspectiveEdgeHandleStyle,
-    drawMetrics: PerspectiveDrawMetrics,
+    activeHandle: CropperHandle?,
+    edgeStyle: CropperEdgeHandleStyle,
+    drawMetrics: CropperDrawMetrics,
 ) {
     val isActive = activeHandle == handle
-    drawEdgeHandleMarker(
-        geometry = geometry,
+    drawCropperEdgeHandleMarker(
+        geometry = CropperEdgeHandleGeometry(
+            center = geometry.center,
+            width = geometry.halfLength * 2f,
+            height = geometry.halfThickness * 2f,
+            rotationDegrees = geometry.rotationDegrees
+        ),
         cornerRadius = drawMetrics.edgeCornerRadiusPx,
         fillColor = if (isActive) edgeStyle.activeFillColor else edgeStyle.fillColor,
         strokeColor = if (isActive) edgeStyle.activeStrokeColor else edgeStyle.strokeColor,
         strokeWidth = drawMetrics.edgeStrokePx,
     )
-}
-
-private fun calculateImageRect(
-    containerSize: Size,
-    imageWidth: Float,
-    imageHeight: Float,
-): Rect {
-    if (containerSize.width <= 0f || containerSize.height <= 0f || imageWidth <= 0f || imageHeight <= 0f) {
-        return Rect.Zero
-    }
-
-    val scale = minOf(containerSize.width / imageWidth, containerSize.height / imageHeight)
-    val drawWidth = imageWidth * scale
-    val drawHeight = imageHeight * scale
-    val left = (containerSize.width - drawWidth) * 0.5f
-    val top = (containerSize.height - drawHeight) * 0.5f
-    return Rect(left, top, left + drawWidth, top + drawHeight)
 }

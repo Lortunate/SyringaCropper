@@ -10,6 +10,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.calculateImageFitRect
+import com.lortunate.syringacropper.isEmptySize
+import com.lortunate.syringacropper.toNormalizedRect
 
 /** Snapshot of the current avatar selection in normalized and source-image pixel coordinates. */
 data class AvatarCropSelection(
@@ -56,14 +59,14 @@ class AvatarCropState {
         )
     }
 
-    /** Returns the current selection using the original source-image pixel size. */
     fun selectionOrNull(
         shape: AvatarCropShape,
         sourceSize: CropSourceSize,
     ): AvatarCropSelection? {
         val current = snapshot
-        val normalizedRect =
-            normalizedRect(current.selectionRect, current.currentImageRect) ?: return null
+        if (current.selectionRect.isEmpty || current.currentImageRect.isEmpty) return null
+
+        val normalizedRect = current.selectionRect.toNormalizedRect(current.currentImageRect)
         return AvatarCropSelection(
             sourceSize = sourceSize,
             shape = shape,
@@ -84,7 +87,7 @@ class AvatarCropState {
         defaultInsetFraction: Float,
         maxScale: Float,
     ) {
-        val nextBaseImageRect = calculateBaseImageRect(containerSize, imageWidth, imageHeight)
+        val nextBaseImageRect = calculateImageFitRect(containerSize, imageWidth, imageHeight)
         val safeInset = normalizedSelectionInsetFraction(defaultInsetFraction)
         val safeMaxScale = maxScale.coerceAtLeast(1f)
         val current = snapshot
@@ -128,6 +131,8 @@ class AvatarCropState {
         zoom: Float,
     ): Boolean {
         val current = snapshot
+        if (current.containerSize.isEmptySize() || current.selectionRect.isEmpty || current.baseImageRect.isEmpty) return false
+
         val nextTransform = transformImageWithGesture(
             containerSize = current.containerSize,
             selectionRect = current.selectionRect,

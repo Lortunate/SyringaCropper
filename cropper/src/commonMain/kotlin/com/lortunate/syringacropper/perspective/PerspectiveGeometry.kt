@@ -1,8 +1,9 @@
 package com.lortunate.syringacropper.perspective
 
-import com.lortunate.syringacropper.CropSourceSize
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
+import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.dot
+import com.lortunate.syringacropper.midpoint
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -74,26 +75,6 @@ internal data class CenteredEdgeBarGeometry(
         return cornerDx * cornerDx + cornerDy * cornerDy <= clampedCornerRadius * clampedCornerRadius
     }
 }
-
-internal fun midpoint(start: Offset, end: Offset): Offset = Offset(
-    x = (start.x + end.x) * 0.5f,
-    y = (start.y + end.y) * 0.5f,
-)
-
-internal fun distanceSquared(a: Offset, b: Offset): Float {
-    val dx = a.x - b.x
-    val dy = a.y - b.y
-    return dx * dx + dy * dy
-}
-
-internal fun Offset.scale(scale: Float): Offset = Offset(x * scale, y * scale)
-
-internal fun Offset.dot(other: Offset): Float = x * other.x + y * other.y
-
-internal fun Offset.coerceTo(rect: Rect): Offset = Offset(
-    x = x.coerceIn(rect.left, rect.right),
-    y = y.coerceIn(rect.top, rect.bottom),
-)
 
 internal fun projectToEdgeNormal(delta: Offset, edgeStart: Offset, edgeEnd: Offset): Offset {
     val edgeX = edgeEnd.x - edgeStart.x

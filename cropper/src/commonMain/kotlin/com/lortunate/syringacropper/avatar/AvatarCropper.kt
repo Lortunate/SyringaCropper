@@ -28,6 +28,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.lortunate.syringacropper.AvatarCropStyle
+import com.lortunate.syringacropper.AvatarInteractionConfig
+import com.lortunate.syringacropper.CropperFrameStyle
+import com.lortunate.syringacropper.isEmptySize
 
 private data class AvatarDrawMetrics(
     val frameStroke: Stroke,
@@ -62,7 +67,7 @@ fun AvatarCropper(
         selectionRect = selectionRect,
         shape = shape,
         frame = style.frame,
-        drawMask = style.mask.drawOutsideSelection,
+        drawMask = style.mask.drawOutside,
     )
 
     LaunchedEffect(
@@ -152,7 +157,7 @@ private fun rememberAvatarOverlayGeometry(
     containerSize: Size,
     selectionRect: Rect,
     shape: AvatarCropShape,
-    frame: AvatarFrameStyle,
+    frame: CropperFrameStyle,
     drawMask: Boolean,
 ): AvatarOverlayGeometry? {
     val gridLineCount = frame.gridLineCount.coerceAtLeast(0)
@@ -214,7 +219,7 @@ private fun DrawScope.drawAvatarOverlay(
         drawPath(it, color = style.mask.color, style = Fill)
     }
 
-    if (style.frame.showFrame) {
+    if (style.frame.strokeWidth > 0.dp) {
         drawPath(
             path = overlayGeometry.selectionPath,
             color = style.frame.color,
