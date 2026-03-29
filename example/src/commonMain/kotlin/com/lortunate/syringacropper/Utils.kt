@@ -43,6 +43,16 @@ internal fun AvatarCropSelection.formatDebugSummary(): String {
     }
 }
 
+internal fun CropperRectSelection.formatDebugSummary(): String {
+    return buildString {
+        appendLine("Image Rect")
+        appendLine(imageRect.formatRect())
+        appendLine()
+        appendLine("Normalized Rect")
+        append(normalizedRect.formatRect())
+    }
+}
+
 internal fun PerspectiveQuad.formatDebugSummary(): String {
     val left = minOf(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x)
     val top = minOf(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y)

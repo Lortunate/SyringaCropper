@@ -17,6 +17,7 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.lortunate.syringacropper.screen.AvatarCropScreen
 import com.lortunate.syringacropper.screen.HomeScreen
 import com.lortunate.syringacropper.screen.PerspectiveCropScreen
+import com.lortunate.syringacropper.screen.RectCropScreen
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
@@ -33,6 +34,9 @@ sealed interface NavRoute : NavKey {
 
     @Serializable
     data object AvatarCrop : NavRoute
+
+    @Serializable
+    data object RectCrop : NavRoute
 
 }
 
@@ -70,6 +74,10 @@ fun App() {
 
                         is NavRoute.AvatarCrop -> NavEntry(key) {
                             AvatarCropScreen()
+                        }
+
+                        is NavRoute.RectCrop -> NavEntry(key) {
+                            RectCropScreen()
                         }
 
                         else -> throw IllegalArgumentException("Unknown route: $key")
