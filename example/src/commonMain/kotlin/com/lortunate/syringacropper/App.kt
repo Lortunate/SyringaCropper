@@ -15,6 +15,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.lortunate.syringacropper.screen.AvatarCropScreen
+import com.lortunate.syringacropper.screen.CropResultScreen
 import com.lortunate.syringacropper.screen.HomeScreen
 import com.lortunate.syringacropper.screen.PerspectiveCropScreen
 import com.lortunate.syringacropper.screen.RectCropScreen
@@ -37,6 +38,9 @@ sealed interface NavRoute : NavKey {
 
     @Serializable
     data object RectCrop : NavRoute
+
+    @Serializable
+    data object CropResult : NavRoute
 
 }
 
@@ -78,6 +82,10 @@ fun App() {
 
                         is NavRoute.RectCrop -> NavEntry(key) {
                             RectCropScreen()
+                        }
+
+                        is NavRoute.CropResult -> NavEntry(key) {
+                            CropResultScreen()
                         }
 
                         else -> throw IllegalArgumentException("Unknown route: $key")

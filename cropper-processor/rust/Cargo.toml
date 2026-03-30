@@ -1,0 +1,38 @@
+[package]
+name = "cropper-processor"
+version = "0.1.0"
+edition = "2024"
+autobins = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["jni"]
+jni = ["jni_fn", "dep:jni", "rayon"]
+wasm = ["wasm-bindgen"]
+bench = ["dep:image", "rayon"]
+
+[dependencies]
+jni = { version = "0.22.3", optional = true }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp", "webp"], optional = true }
+jni_fn = { version = "0.1.2", optional = true }
+rayon = { version = "1.11.0", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+fast_image_resize = "6.0.0"
+wide = "1.2.0"
+
+[[bin]]
+name = "cropper-processor-bench"
+path = "src/bin.rs"
+required-features = ["bench"]
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

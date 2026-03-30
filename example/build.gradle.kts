@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.tasks.Copy
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -10,6 +11,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinSerialization)
 }
+
+val wasmPackageKotlinDir = rootProject.layout.buildDirectory.dir("wasm/packages/${rootProject.name}-${project.name}/kotlin")
+val cropperProcessorWasmResourcesDir = project(":cropper-processor").layout.buildDirectory.dir("processedResources/wasmJs/main")
 
 kotlin {
     androidTarget {
@@ -43,6 +47,7 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(project(":cropper-processor"))
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
         }
@@ -69,11 +74,51 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+        iosMain.dependencies {
+            implementation(project(":cropper-processor"))
+        }
         jvmMain.dependencies {
+            implementation(project(":cropper-processor"))
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+        wasmJsMain.dependencies {
+            implementation(project(":cropper-processor"))
+        }
     }
+}
+
+val syncCropperProcessorWasmResources = tasks.register<Copy>("syncCropperProcessorWasmResources") {
+    dependsOn(":cropper-processor:wasmJsProcessResources")
+    dependsOn("wasmJsPublicPackageJson")
+    from(cropperProcessorWasmResourcesDir)
+    into(wasmPackageKotlinDir)
+    include("cropper_processor.js", "cropper_processor_bridge.js", "cropper_processor_bg.wasm")
+}
+
+syncCropperProcessorWasmResources.configure {
+    mustRunAfter("wasmJsProductionExecutableCompileSync")
+    mustRunAfter("wasmJsDevelopmentExecutableCompileSync")
+}
+
+tasks.named("wasmJsBrowserProductionWebpack") {
+    dependsOn(syncCropperProcessorWasmResources)
+}
+
+tasks.named("wasmJsBrowserDevelopmentWebpack") {
+    dependsOn(syncCropperProcessorWasmResources)
+}
+
+tasks.named("wasmJsBrowserDevelopmentRun") {
+    dependsOn(syncCropperProcessorWasmResources)
+}
+
+tasks.named("wasmJsProductionExecutableCompileSync") {
+    finalizedBy(syncCropperProcessorWasmResources)
+}
+
+tasks.named("wasmJsDevelopmentExecutableCompileSync") {
+    finalizedBy(syncCropperProcessorWasmResources)
 }
 
 android {

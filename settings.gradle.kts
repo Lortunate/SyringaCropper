@@ -34,3 +34,5 @@ plugins {
 
 include(":example")
 include(":cropper")
+include(":cropper-processor")
+

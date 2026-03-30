@@ -28,11 +28,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lortunate.syringacropper.CropResultSessionStore
 import com.lortunate.syringacropper.LocalNavBackStack
+import com.lortunate.syringacropper.PerspectiveCropResultRequest
 import com.lortunate.syringacropper.formatDebugSummary
 import com.lortunate.syringacropper.perspective.PerspectiveCropState
 import com.lortunate.syringacropper.perspective.PerspectiveCropper
 import com.lortunate.syringacropper.perspective.rememberPerspectiveCropState
+import com.lortunate.syringacropper.showCropResult
 import com.lortunate.syringacropper.toCropSourceSize
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
@@ -89,6 +92,17 @@ fun PerspectiveCropScreen() {
                         ?: "No active selection."
                     viewModel.updateInspectionResult(inspectionResult)
                 },
+                onCropClick = {
+                    val bitmap = previewBitmap ?: return@ActionPanel
+                    val sourceSize = state.sourceSize ?: bitmap.toCropSourceSize()
+                    val selection = cropState.selectionOrNull(sourceSize) ?: return@ActionPanel
+                    navBackStack.showCropResult(
+                        PerspectiveCropResultRequest(
+                            sourceBitmap = bitmap,
+                            selection = selection,
+                        ),
+                    )
+                },
                 canClear = state.canClear,
                 hasCropSelection = cropState.hasSelection
             )
@@ -124,16 +138,28 @@ private fun ActionPanel(
     onClearClick: () -> Unit,
     onResetClick: () -> Unit,
     onInspectClick: () -> Unit,
+    onCropClick: () -> Unit,
     canClear: Boolean,
     hasCropSelection: Boolean
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onPickClick,
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Text("Pick")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                modifier = Modifier.weight(1f),
+                onClick = onPickClick,
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text("Pick")
+            }
+            
+            Button(
+                modifier = Modifier.weight(1f),
+                onClick = onCropClick,
+                enabled = hasCropSelection,
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text("Crop")
+            }
         }
 
         Row(
