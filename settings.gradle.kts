@@ -33,6 +33,7 @@ plugins {
 }
 
 include(":example")
+include(":androidApp")
 include(":cropper")
 include(":cropper-processor")
 

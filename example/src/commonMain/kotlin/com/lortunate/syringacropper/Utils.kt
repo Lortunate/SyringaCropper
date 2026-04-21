@@ -4,8 +4,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
 import com.lortunate.syringacropper.avatar.AvatarCropSelection
+import com.lortunate.syringacropper.avatar.AvatarCropShape
+import com.lortunate.syringacropper.avatar.AvatarCropState
 import com.lortunate.syringacropper.perspective.PerspectiveCropSelection
+import com.lortunate.syringacropper.perspective.PerspectiveCropState
 import com.lortunate.syringacropper.perspective.PerspectiveQuad
+import com.lortunate.syringacropper.rect.RectCropState
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.readBytes
 import kotlin.math.roundToInt
@@ -67,6 +71,29 @@ internal fun PerspectiveQuad.formatDebugSummary(): String {
         appendLine("BL: ${bottomLeft.formatPair()}")
         append("Rect: (${left.formatValue()}, ${top.formatValue()}, ${right.formatValue()}, ${bottom.formatValue()})")
     }
+}
+
+internal fun PerspectiveCropState.inspect(sourceSize: CropSourceSize?): String {
+    return selectionOrNull(sourceSize ?: return "No active selection.")
+        ?.formatDebugSummary()
+        ?: "No active selection."
+}
+
+internal fun RectCropState.inspect(sourceSize: CropSourceSize?): String {
+    return selectionOrNull(sourceSize ?: return "No active selection.")
+        ?.formatDebugSummary()
+        ?: "No active selection."
+}
+
+internal fun AvatarCropState.inspect(
+    sourceSize: CropSourceSize?,
+    shape: AvatarCropShape,
+): String {
+    return selectionOrNull(
+        shape = shape,
+        sourceSize = sourceSize ?: return "No active selection.",
+    )?.formatDebugSummary()
+        ?: "No active selection."
 }
 
 private fun Offset.formatPair(): String {

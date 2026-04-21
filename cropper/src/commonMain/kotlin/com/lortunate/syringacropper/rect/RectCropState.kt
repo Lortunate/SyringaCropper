@@ -11,6 +11,8 @@ import androidx.compose.ui.geometry.Rect
 import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.CropperHandle
 import com.lortunate.syringacropper.CropperRectSelection
+import com.lortunate.syringacropper.common.denormalizeTo
+import com.lortunate.syringacropper.common.toRectSelection
 import com.lortunate.syringacropper.coerceInside
 import com.lortunate.syringacropper.remapRect
 import com.lortunate.syringacropper.toNormalizedRect
@@ -65,12 +67,7 @@ class RectCropState {
         clearSelection()
         if (imageBounds.isEmpty) return
 
-        val actualRect = Rect(
-            left = imageBounds.left + normalizedRect.left * imageBounds.width,
-            top = imageBounds.top + normalizedRect.top * imageBounds.height,
-            right = imageBounds.left + normalizedRect.right * imageBounds.width,
-            bottom = imageBounds.top + normalizedRect.bottom * imageBounds.height
-        )
+        val actualRect = normalizedRect.denormalizeTo(imageBounds)
         cropRect = actualRect.coerceInside(imageBounds, minRectSizePx)
     }
 
@@ -88,16 +85,7 @@ class RectCropState {
 
     fun selectionOrNull(sourceSize: CropSourceSize): CropperRectSelection? {
         val norm = normalizedRectOrNull() ?: return null
-        return CropperRectSelection(
-            imageRect = Rect(
-                left = norm.left * sourceSize.width,
-                top = norm.top * sourceSize.height,
-                right = norm.right * sourceSize.width,
-                bottom = norm.bottom * sourceSize.height,
-            ),
-            normalizedRect = norm,
-            sourceSize = sourceSize
-        )
+        return norm.toRectSelection(sourceSize)
     }
 
     internal fun updateConstraints(minRectSizePx: Float) {

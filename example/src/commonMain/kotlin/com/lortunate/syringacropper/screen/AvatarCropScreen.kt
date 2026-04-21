@@ -31,16 +31,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lortunate.syringacropper.AvatarCropResultRequest
-import com.lortunate.syringacropper.CropResultSessionStore
+import com.lortunate.syringacropper.inspect
 import com.lortunate.syringacropper.LocalNavBackStack
 import com.lortunate.syringacropper.avatar.AvatarCropShape
 import com.lortunate.syringacropper.avatar.AvatarCropState
 import com.lortunate.syringacropper.avatar.AvatarCropper
 import com.lortunate.syringacropper.avatar.rememberAvatarCropState
-import com.lortunate.syringacropper.formatDebugSummary
+import com.lortunate.syringacropper.resolveSourceSize
 import com.lortunate.syringacropper.showCropResult
-import com.lortunate.syringacropper.toCropSourceSize
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -53,6 +51,7 @@ fun AvatarCropScreen() {
 
     val previewBitmap = state.previewBitmap
     val cropState = key(previewBitmap) { rememberAvatarCropState() }
+    val sourceSize = previewBitmap.resolveSourceSize(state.sourceSize)
 
     val imagePickerLauncher = rememberFilePickerLauncher(type = FileKitType.Image) { file ->
         viewModel.onImagePicked(file)
@@ -90,28 +89,15 @@ fun AvatarCropScreen() {
                     viewModel.updateInspectionResult(null)
                 },
                 onInspectClick = {
-                    val sourceSize = state.sourceSize
-                        ?: previewBitmap?.toCropSourceSize()
-                        ?: return@AvatarActionPanel
-                    val inspectionResult = cropState.selectionOrNull(
-                        shape = state.shape,
-                        sourceSize = sourceSize,
-                    )?.formatDebugSummary() ?: "No active selection."
-                    viewModel.updateInspectionResult(inspectionResult)
+                    viewModel.updateInspectionResult(cropState.inspect(sourceSize, state.shape))
                 },
                 onCropClick = {
                     val bitmap = previewBitmap ?: return@AvatarActionPanel
-                    val sourceSize = state.sourceSize ?: bitmap.toCropSourceSize()
                     val selection = cropState.selectionOrNull(
                         shape = state.shape,
-                        sourceSize = sourceSize,
+                        sourceSize = sourceSize ?: return@AvatarActionPanel,
                     ) ?: return@AvatarActionPanel
-                    navBackStack.showCropResult(
-                        AvatarCropResultRequest(
-                            sourceBitmap = bitmap,
-                            selection = selection,
-                        ),
-                    )
+                    navBackStack.showCropResult(sourceBitmap = bitmap, selection = selection)
                 },
                 canClear = state.canClear,
                 hasCropSelection = cropState.hasSelection,

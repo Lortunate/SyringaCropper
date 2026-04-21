@@ -10,6 +10,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.CropperHandle
+import com.lortunate.syringacropper.common.normalizeSelectionInsetFraction
+import com.lortunate.syringacropper.common.scaleToImageSpace
+import com.lortunate.syringacropper.common.toPerspectiveSelection
 import com.lortunate.syringacropper.coerceTo
 import com.lortunate.syringacropper.distanceSquared
 import com.lortunate.syringacropper.remap
@@ -85,17 +88,13 @@ class PerspectiveCropState {
 
     /** Returns the current selection in original source-image pixel coordinates. */
     fun imageQuadOrNull(sourceSize: CropSourceSize): PerspectiveQuad? {
-        return normalizedQuadOrNull()?.toImageSpace(sourceSize)
+        return normalizedQuadOrNull()?.scaleToImageSpace(sourceSize, clampToBounds = true)
     }
 
     /** Returns the recommended selection snapshot using the original source-image pixel size. */
     fun selectionOrNull(sourceSize: CropSourceSize): PerspectiveCropSelection? {
         val normalizedQuad = normalizedQuadOrNull() ?: return null
-        return PerspectiveCropSelection(
-            imageQuad = normalizedQuad.toImageSpace(sourceSize),
-            normalizedQuad = normalizedQuad,
-            sourceSize = sourceSize,
-        )
+        return normalizedQuad.toPerspectiveSelection(sourceSize)
     }
 
     internal fun updateConstraints(minEdgeLengthPx: Float, constraintSolveSteps: Int) {
@@ -255,7 +254,7 @@ private object PerspectiveQuadConstraints {
     fun defaultQuad(imageRect: Rect, insetFraction: Float): PerspectiveQuad? {
         if (imageRect.isEmpty) return null
 
-        val safeInset = insetFraction.coerceIn(0f, 0.45f)
+        val safeInset = normalizeSelectionInsetFraction(insetFraction)
         val insetX = imageRect.width * safeInset
         val insetY = imageRect.height * safeInset
         return PerspectiveQuad(

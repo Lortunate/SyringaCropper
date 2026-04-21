@@ -2,6 +2,7 @@ package com.lortunate.syringacropper.perspective
 
 import androidx.compose.ui.geometry.Offset
 import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.common.scaleToImageSpace
 import com.lortunate.syringacropper.dot
 import com.lortunate.syringacropper.midpoint
 import kotlin.math.abs
@@ -106,21 +107,4 @@ internal fun cachedEdgeGeometry(
 }
 
 fun PerspectiveQuad.toImageSpace(sourceSize: CropSourceSize): PerspectiveQuad =
-    toImageSpace(sourceSize.width.toFloat(), sourceSize.height.toFloat())
-
-private fun PerspectiveQuad.toImageSpace(imageWidth: Float, imageHeight: Float): PerspectiveQuad {
-    require(imageWidth > 0f) { "imageWidth must be > 0 but was $imageWidth" }
-    require(imageHeight > 0f) { "imageHeight must be > 0 but was $imageHeight" }
-
-    return PerspectiveQuad(
-        topLeft = topLeft.toImageSpace(imageWidth, imageHeight),
-        topRight = topRight.toImageSpace(imageWidth, imageHeight),
-        bottomRight = bottomRight.toImageSpace(imageWidth, imageHeight),
-        bottomLeft = bottomLeft.toImageSpace(imageWidth, imageHeight),
-    )
-}
-
-private fun Offset.toImageSpace(imageWidth: Float, imageHeight: Float): Offset = Offset(
-    x = x.coerceIn(0f, 1f) * imageWidth,
-    y = y.coerceIn(0f, 1f) * imageHeight,
-)
+    scaleToImageSpace(sourceSize, clampToBounds = true)

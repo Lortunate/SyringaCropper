@@ -11,6 +11,9 @@ val rustWasmOutputDir: Provider<Directory> = layout.buildDirectory.dir("rust-was
 
 kotlin {
     jvm()
+    js {
+        browser()
+    }
     android {
         namespace = "com.lortunate.syringacropper.processor"
         compileSdk {
@@ -37,7 +40,7 @@ kotlin {
     }
 
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":cropper"))
                 implementation(libs.compose.runtime)
@@ -45,25 +48,46 @@ kotlin {
                 implementation(libs.compose.ui)
             }
         }
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        androidMain {
+        val unsupportedMain by creating {
+            dependsOn(commonMain)
+        }
+        val androidMain by getting {
             dependencies {
                 implementation(libs.kotlin.stdlib)
             }
         }
-        jvmMain {
+        val jsMain by getting {
+            dependsOn(unsupportedMain)
+        }
+        val iosX64Main by getting {
+            dependsOn(unsupportedMain)
+        }
+        val iosArm64Main by getting {
+            dependsOn(unsupportedMain)
+        }
+        val iosSimulatorArm64Main by getting {
+            dependsOn(unsupportedMain)
+        }
+        val jvmMain by getting {
             resources.srcDirs(rustJvmOutputDir)
             dependencies {
                 implementation(libs.kotlin.stdlib)
             }
         }
-        wasmJsMain {
+        val wasmJsMain by getting {
             resources.srcDirs(rustWasmOutputDir)
         }
+        val skiaMain by creating {
+            dependsOn(commonMain)
+        }
+
+        jvmMain.dependsOn(skiaMain)
+        wasmJsMain.dependsOn(skiaMain)
     }
 }
 

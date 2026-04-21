@@ -10,6 +10,7 @@ import com.lortunate.syringacropper.perspective.PerspectiveQuad
 import java.nio.ByteBuffer
 
 actual object CropperProcessor {
+    actual val supportMessage: String? = null
 
     init {
         System.loadLibrary("cropper_processor")
@@ -21,41 +22,23 @@ actual object CropperProcessor {
         tw: Int,
         th: Int
     ): ImageBitmap {
-        quad.requireProcessable(image.width, image.height, tw, th)
-        val params = floatArrayOf(
-            quad.topLeft.x, quad.topLeft.y, quad.topRight.x, quad.topRight.y,
-            quad.bottomRight.x, quad.bottomRight.y, quad.bottomLeft.x, quad.bottomLeft.y,
-            tw.toFloat(), th.toFloat()
-        )
-        return image.execute(intArrayOf(PerspectiveWarpOp), params)
-            .withSize(tw, th, "perspectiveWarp")
+        return process(image, preparePerspectiveWarpOperation(image, quad, tw, th))
     }
 
     actual fun rectCrop(image: ImageBitmap, rect: Rect): ImageBitmap {
-        val crop = rect.toCropRectSpec(image.width, image.height, "rectCrop")
-        return image.execute(intArrayOf(RectCropOp), crop.toParams())
-            .withSize(crop.width, crop.height, "rectCrop")
+        return process(image, prepareRectCropOperation(image, rect))
     }
 
     actual fun circleCrop(image: ImageBitmap, rect: Rect): ImageBitmap {
-        val crop = rect.toCropRectSpec(image.width, image.height, "circleCrop")
-        return image.execute(intArrayOf(CircleCropOp), crop.toParams())
-            .withSize(crop.width, crop.height, "circleCrop")
+        return process(image, prepareCircleCropOperation(image, rect))
     }
 
     actual fun roundedRectCrop(image: ImageBitmap, rect: Rect, radius: Float): ImageBitmap {
-        val crop = rect.toCropRectSpec(image.width, image.height, "roundedRectCrop")
-        val normalizedRadius = normalizeRoundedRadius(radius, crop.width, crop.height)
-        return image.execute(
-            intArrayOf(RoundedRectCropOp),
-            crop.toRoundedRectParams(normalizedRadius),
-        ).withSize(crop.width, crop.height, "roundedRectCrop")
+        return process(image, prepareRoundedRectCropOperation(image, rect, radius))
     }
 
     actual fun resize(image: ImageBitmap, tw: Int, th: Int): ImageBitmap {
-        requireTargetSize(tw, th, "resize")
-        val params = floatArrayOf(tw.toFloat(), th.toFloat())
-        return image.execute(intArrayOf(ResizeOp), params).withSize(tw, th, "resize")
+        return process(image, prepareResizeOperation(tw, th))
     }
 
     @JvmStatic
@@ -66,6 +49,17 @@ actual object CropperProcessor {
         types: IntArray,
         params: FloatArray
     ): ByteArray
+
+    private fun process(image: ImageBitmap, operation: CropperOperation): ImageBitmap {
+        return processNativeOperation(
+            image = image,
+            operation = operation,
+            execute = { source, types, params -> source.execute(types, params) },
+            toImageBitmap = { bytes, width, height, operationName ->
+                bytes.withSize(width, height, operationName)
+            },
+        )
+    }
 
     private fun ImageBitmap.execute(types: IntArray, params: FloatArray): ByteArray {
         val bm = asAndroidBitmap()

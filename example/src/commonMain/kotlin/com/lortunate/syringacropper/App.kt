@@ -40,7 +40,7 @@ sealed interface NavRoute : NavKey {
     data object RectCrop : NavRoute
 
     @Serializable
-    data object CropResult : NavRoute
+    data class CropResult(val requestId: Long) : NavRoute
 
 }
 
@@ -85,7 +85,7 @@ fun App() {
                         }
 
                         is NavRoute.CropResult -> NavEntry(key) {
-                            CropResultScreen()
+                            CropResultScreen(requestId = key.requestId)
                         }
 
                         else -> throw IllegalArgumentException("Unknown route: $key")

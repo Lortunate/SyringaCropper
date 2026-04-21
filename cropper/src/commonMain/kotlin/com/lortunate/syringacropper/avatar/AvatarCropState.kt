@@ -11,6 +11,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import com.lortunate.syringacropper.CropSourceSize
 import com.lortunate.syringacropper.calculateImageFitRect
+import com.lortunate.syringacropper.common.normalizeSelectionInsetFraction
+import com.lortunate.syringacropper.common.toAvatarSelection
 import com.lortunate.syringacropper.isEmptySize
 import com.lortunate.syringacropper.toNormalizedRect
 
@@ -48,7 +50,7 @@ class AvatarCropState {
         val current = snapshot
         if (current.containerSize.isEmptySize()) return
 
-        val safeInset = normalizedSelectionInsetFraction(insetFraction)
+        val safeInset = normalizeSelectionInsetFraction(insetFraction)
         applyReconciledSnapshot(
             current.copy(
                 defaultInsetFraction = safeInset,
@@ -67,17 +69,7 @@ class AvatarCropState {
         if (current.selectionRect.isEmpty || current.currentImageRect.isEmpty) return null
 
         val normalizedRect = current.selectionRect.toNormalizedRect(current.currentImageRect)
-        return AvatarCropSelection(
-            sourceSize = sourceSize,
-            shape = shape,
-            normalizedRect = normalizedRect,
-            imageRect = Rect(
-                left = normalizedRect.left * sourceSize.width,
-                top = normalizedRect.top * sourceSize.height,
-                right = normalizedRect.right * sourceSize.width,
-                bottom = normalizedRect.bottom * sourceSize.height,
-            ),
-        )
+        return normalizedRect.toAvatarSelection(shape = shape, sourceSize = sourceSize)
     }
 
     internal fun synchronize(
@@ -88,7 +80,7 @@ class AvatarCropState {
         maxScale: Float,
     ) {
         val nextBaseImageRect = calculateImageFitRect(containerSize, imageWidth, imageHeight)
-        val safeInset = normalizedSelectionInsetFraction(defaultInsetFraction)
+        val safeInset = normalizeSelectionInsetFraction(defaultInsetFraction)
         val safeMaxScale = maxScale.coerceAtLeast(1f)
         val current = snapshot
         val viewportChanged = containerSize != current.containerSize ||

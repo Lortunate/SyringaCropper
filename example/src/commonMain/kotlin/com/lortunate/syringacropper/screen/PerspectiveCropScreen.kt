@@ -28,15 +28,13 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lortunate.syringacropper.CropResultSessionStore
+import com.lortunate.syringacropper.inspect
 import com.lortunate.syringacropper.LocalNavBackStack
-import com.lortunate.syringacropper.PerspectiveCropResultRequest
-import com.lortunate.syringacropper.formatDebugSummary
 import com.lortunate.syringacropper.perspective.PerspectiveCropState
 import com.lortunate.syringacropper.perspective.PerspectiveCropper
 import com.lortunate.syringacropper.perspective.rememberPerspectiveCropState
+import com.lortunate.syringacropper.resolveSourceSize
 import com.lortunate.syringacropper.showCropResult
-import com.lortunate.syringacropper.toCropSourceSize
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 
@@ -49,6 +47,7 @@ fun PerspectiveCropScreen() {
 
     val previewBitmap = state.previewBitmap
     val cropState = key(previewBitmap) { rememberPerspectiveCropState() }
+    val sourceSize = previewBitmap.resolveSourceSize(state.sourceSize)
 
     val imagePickerLauncher = rememberFilePickerLauncher(type = FileKitType.Image) { file ->
         viewModel.onImagePicked(file)
@@ -84,24 +83,13 @@ fun PerspectiveCropScreen() {
                     viewModel.updateInspectionResult(null)
                 },
                 onInspectClick = {
-                    val sourceSize = state.sourceSize
-                        ?: previewBitmap?.toCropSourceSize()
-                        ?: return@ActionPanel
-                    val inspectionResult = cropState.selectionOrNull(sourceSize)
-                        ?.formatDebugSummary()
-                        ?: "No active selection."
-                    viewModel.updateInspectionResult(inspectionResult)
+                    viewModel.updateInspectionResult(cropState.inspect(sourceSize))
                 },
                 onCropClick = {
                     val bitmap = previewBitmap ?: return@ActionPanel
-                    val sourceSize = state.sourceSize ?: bitmap.toCropSourceSize()
-                    val selection = cropState.selectionOrNull(sourceSize) ?: return@ActionPanel
-                    navBackStack.showCropResult(
-                        PerspectiveCropResultRequest(
-                            sourceBitmap = bitmap,
-                            selection = selection,
-                        ),
-                    )
+                    val selection = cropState.selectionOrNull(sourceSize ?: return@ActionPanel)
+                        ?: return@ActionPanel
+                    navBackStack.showCropResult(sourceBitmap = bitmap, selection = selection)
                 },
                 canClear = state.canClear,
                 hasCropSelection = cropState.hasSelection

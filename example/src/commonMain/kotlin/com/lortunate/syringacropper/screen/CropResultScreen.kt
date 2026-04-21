@@ -25,92 +25,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lortunate.syringacropper.CropResultRequest
-import com.lortunate.syringacropper.CropResultSessionStore
-import com.lortunate.syringacropper.ExampleCropExecutor
 import com.lortunate.syringacropper.LocalNavBackStack
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-private data class CropResultScreenState(
-    val isEmpty: Boolean = false,
-    val resultBitmap: ImageBitmap? = null,
-    val isCropping: Boolean = false,
-    val errorMessage: String? = null,
-)
-
-private class CropResultViewModel : ViewModel() {
-    private val _state = MutableStateFlow(CropResultScreenState())
-    val state = _state.asStateFlow()
-    private var latestHandledRequestId: Long? = null
-
-    init {
-        val supportMessage = ExampleCropExecutor.supportMessage
-        if (supportMessage != null) {
-            _state.value = CropResultScreenState(errorMessage = supportMessage)
-        } else {
-            viewModelScope.launch {
-                CropResultSessionStore.latestRequestId.collect { requestId ->
-                    if (requestId == null || requestId == latestHandledRequestId) {
-                        if (latestHandledRequestId == null) {
-                            _state.value = CropResultScreenState(isEmpty = true)
-                        }
-                        return@collect
-                    }
-
-                    val request = CropResultSessionStore.consume(requestId)
-                    if (request == null) {
-                        if (latestHandledRequestId == null) {
-                            _state.value = CropResultScreenState(isEmpty = true)
-                        }
-                        return@collect
-                    }
-
-                    latestHandledRequestId = requestId
-                    crop(request)
-                }
-            }
-        }
-    }
-
-    private fun crop(request: CropResultRequest) {
-        _state.update {
-            it.copy(
-                isEmpty = false,
-                isCropping = true,
-                resultBitmap = null,
-                errorMessage = null,
-            )
-        }
-
-        viewModelScope.launch {
-            val cropped = withContext(Dispatchers.Default) {
-                runCatching { request.crop() }
-            }
-            _state.update {
-                it.copy(
-                    isCropping = false,
-                    resultBitmap = cropped.getOrNull(),
-                    errorMessage = cropped.exceptionOrNull()?.message,
-                )
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CropResultScreen() {
+fun CropResultScreen(requestId: Long) {
     val navBackStack = LocalNavBackStack.current
-    val viewModel = viewModel { CropResultViewModel() }
+    val viewModel = viewModel(key = "crop-result-$requestId") { CropResultViewModel(requestId) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val errorMessage = state.errorMessage
     val resultBitmap = state.resultBitmap

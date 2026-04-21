@@ -2,26 +2,76 @@ import init, {circle_crop, perspective_warp, rect_crop, resize, rounded_rect_cro
 
 await init();
 
+const RECT_CROP_OP = 1;
+const CIRCLE_CROP_OP = 2;
+const ROUNDED_RECT_CROP_OP = 3;
+const PERSPECTIVE_WARP_OP = 4;
+const RESIZE_OP = 5;
+
 const toUint8Array = (input) => Uint8Array.from(input, (value) => Number(value));
+const toIntArray = (input) => Array.from(input, (value) => Number(value));
+const toNumberArray = (input) => Array.from(input, (value) => Number(value));
 const toFloat32Array = (input) => Float32Array.from(input, (value) => Number(value));
 const toPlainArray = (output) => (output ? Array.from(output, (value) => Number(value)) : undefined);
 
-export function perspectiveWarp(input, w, h, corners, tw, th) {
-    return toPlainArray(perspective_warp(toUint8Array(input), w, h, toFloat32Array(corners), tw, th));
-}
+export function process(input, sw, sh, types, params) {
+    const operationTypes = toIntArray(types);
+    const operationParams = toNumberArray(params);
+    const operationType = operationTypes[0];
+    const pixels = toUint8Array(input);
 
-export function rectCrop(input, sw, sh, x, y, w, h) {
-    return toPlainArray(rect_crop(toUint8Array(input), sw, sh, x, y, w, h));
-}
-
-export function circleCrop(input, sw, sh, x, y, w, h) {
-    return toPlainArray(circle_crop(toUint8Array(input), sw, sh, x, y, w, h));
-}
-
-export function roundedRectCrop(input, sw, sh, x, y, w, h, r) {
-    return toPlainArray(rounded_rect_crop(toUint8Array(input), sw, sh, x, y, w, h, r));
-}
-
-export function resizeImage(input, sw, sh, dw, dh) {
-    return toPlainArray(resize(toUint8Array(input), sw, sh, dw, dh));
+    switch (operationType) {
+        case PERSPECTIVE_WARP_OP:
+            return toPlainArray(
+                perspective_warp(
+                    pixels,
+                    sw,
+                    sh,
+                    toFloat32Array(operationParams.slice(0, 8)),
+                    operationParams[8],
+                    operationParams[9],
+                ),
+            );
+        case RECT_CROP_OP:
+            return toPlainArray(
+                rect_crop(
+                    pixels,
+                    sw,
+                    sh,
+                    operationParams[0],
+                    operationParams[1],
+                    operationParams[2],
+                    operationParams[3],
+                ),
+            );
+        case CIRCLE_CROP_OP:
+            return toPlainArray(
+                circle_crop(
+                    pixels,
+                    sw,
+                    sh,
+                    operationParams[0],
+                    operationParams[1],
+                    operationParams[2],
+                    operationParams[3],
+                ),
+            );
+        case ROUNDED_RECT_CROP_OP:
+            return toPlainArray(
+                rounded_rect_crop(
+                    pixels,
+                    sw,
+                    sh,
+                    operationParams[0],
+                    operationParams[1],
+                    operationParams[2],
+                    operationParams[3],
+                    operationParams[4],
+                ),
+            );
+        case RESIZE_OP:
+            return toPlainArray(resize(pixels, sw, sh, operationParams[0], operationParams[1]));
+        default:
+            throw new Error(`Unsupported cropper operation type: ${operationType}`);
+    }
 }

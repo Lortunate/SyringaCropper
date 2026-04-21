@@ -3,7 +3,7 @@ package com.lortunate.syringacropper.rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import com.lortunate.syringacropper.CropperHandle
-import com.lortunate.syringacropper.DEFAULT_MAX_SELECTION_INSET
+import com.lortunate.syringacropper.common.normalizeSelectionInsetFraction
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -14,7 +14,7 @@ internal object RectCropGeometry {
         aspectRatio: RectCropAspectRatio
     ): Rect? {
         if (imageBounds.isEmpty) return null
-        val safeInset = insetFraction.coerceIn(0f, DEFAULT_MAX_SELECTION_INSET)
+        val safeInset = normalizeSelectionInsetFraction(insetFraction)
         val insetX = imageBounds.width * safeInset
         val insetY = imageBounds.height * safeInset
         val maxAvailable = Rect(

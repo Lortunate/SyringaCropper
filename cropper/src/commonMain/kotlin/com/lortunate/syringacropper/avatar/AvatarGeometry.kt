@@ -4,8 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import com.lortunate.syringacropper.DEFAULT_MAX_SELECTION_INSET
 import com.lortunate.syringacropper.center
+import com.lortunate.syringacropper.common.normalizeSelectionInsetFraction
 import com.lortunate.syringacropper.isEmptySize
 import com.lortunate.syringacropper.squareRect
 import kotlin.math.max
@@ -28,7 +28,7 @@ internal fun defaultSelectionRect(
     insetFraction: Float,
 ): Rect {
     if (containerSize.isEmptySize()) return Rect.Zero
-    val safeInset = normalizedSelectionInsetFraction(insetFraction)
+    val safeInset = normalizeSelectionInsetFraction(insetFraction)
     val side = max(1f, min(containerSize.width, containerSize.height) * (1f - safeInset * 2f))
     return squareRect(center = containerSize.center, side = side)
 }
@@ -208,10 +208,6 @@ internal fun transformImageWithGesture(
         offset = nextOffset,
         maxScale = maxScale,
     )
-}
-
-internal fun normalizedSelectionInsetFraction(insetFraction: Float): Float {
-    return insetFraction.coerceIn(0f, DEFAULT_MAX_SELECTION_INSET)
 }
 
 private fun imageSizeForScale(baseImageRect: Rect, scale: Float): Size {

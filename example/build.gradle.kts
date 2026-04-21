@@ -1,10 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.tasks.Copy
 
 plugins {
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.composeMultiplatform)
@@ -16,10 +15,12 @@ val wasmPackageKotlinDir = rootProject.layout.buildDirectory.dir("wasm/packages/
 val cropperProcessorWasmResourcesDir = project(":cropper-processor").layout.buildDirectory.dir("processedResources/wasmJs/main")
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+    android {
+        namespace = "com.lortunate.syringacropper.example"
+        compileSdk {
+            version = release(libs.versions.android.compileSdk.get().toInt())
         }
+        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
     listOf(
@@ -46,44 +47,48 @@ kotlin {
     }
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(project(":cropper-processor"))
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.activity.compose)
-        }
-        commonMain.dependencies {
-            implementation(project(":cropper"))
+        val commonMain by getting {
+            dependencies {
+                implementation(project(":cropper"))
+                implementation(project(":cropper-processor"))
 
-            implementation(libs.material.icons.extended)
-            implementation(libs.jetbrains.navigation3.ui)
-            implementation(libs.jetbrains.lifecycle.viewmodelNavigation3)
-            implementation(libs.kotlinx.serialization.json)
+                implementation(libs.material.icons.extended)
+                implementation(libs.jetbrains.navigation3.ui)
+                implementation(libs.jetbrains.lifecycle.viewmodelNavigation3)
+                implementation(libs.kotlinx.serialization.json)
 
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.filekit.core)
-            implementation(libs.filekit.dialogs)
-            implementation(libs.filekit.dialogs.compose)
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
+                implementation(libs.filekit.dialogs.compose)
+            }
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
         }
-        iosMain.dependencies {
-            implementation(project(":cropper-processor"))
+        val webMain by creating {
+            dependsOn(commonMain)
         }
-        jvmMain.dependencies {
-            implementation(project(":cropper-processor"))
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
+        val jsMain by getting {
+            dependsOn(webMain)
         }
-        wasmJsMain.dependencies {
-            implementation(project(":cropper-processor"))
+        val wasmJsMain by getting {
+            dependsOn(webMain)
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.kotlinx.coroutinesSwing)
+            }
         }
     }
 }
@@ -119,37 +124,6 @@ tasks.named("wasmJsProductionExecutableCompileSync") {
 
 tasks.named("wasmJsDevelopmentExecutableCompileSync") {
     finalizedBy(syncCropperProcessorWasmResources)
-}
-
-android {
-    namespace = "com.lortunate.syringacropper"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        applicationId = "com.lortunate.syringacropper"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-dependencies {
-    debugImplementation(libs.compose.uiTooling)
 }
 
 compose.desktop {
