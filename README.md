@@ -1,38 +1,76 @@
 ## SyringaCropper
 
-This repository contains the cropper libraries plus a multiplatform sample app.
+Compose Multiplatform image cropper library with a sample app.
 
-### Modules
+### Setup
 
-- `cropper`: Compose Multiplatform cropper UI library
-- `cropper-processor`: image processing backend used by the croppers
-- `example`: shared KMP sample app module
-- `androidApp`: Android application entrypoint for the sample app
+Add the GitHub Packages Maven repository:
 
-### Android sample app
-
-Build debug APK:
-
-```bash
-./gradlew :androidApp:assembleDebug
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven {
+            url = uri("https://maven.pkg.github.com/lortunate/SyringaCropper")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+                    .get()
+                password = providers.gradleProperty("gpr.key")
+                    .orElse(providers.environmentVariable("GITHUB_TOKEN"))
+                    .get()
+            }
+        }
+    }
+}
 ```
 
-Install to a connected device:
+Set credentials in `~/.gradle/gradle.properties`:
 
-```bash
-./gradlew :androidApp:installDebug
+```properties
+gpr.user=your-github-username
+gpr.key=your-github-token
 ```
 
-APK output:
+Add the published packages:
 
-```text
-androidApp/build/outputs/apk/debug/androidApp-debug.apk
+```kotlin
+commonMain.dependencies {
+    implementation("com.lortunate:cropper:0.0.1")
+    implementation("com.lortunate:cropper-processor:0.0.1")
+}
 ```
 
-### Shared sample module
+### Usage
 
-Build the desktop/JVM artifact for the shared sample module:
+```kotlin
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import com.lortunate.syringacropper.CropSourceSize
+import com.lortunate.syringacropper.rect.RectCropper
+import com.lortunate.syringacropper.rect.rememberRectCropState
 
-```bash
-./gradlew :example:jvmJar
+@Composable
+fun CropperExample(imageBitmap: ImageBitmap) {
+    val cropState = rememberRectCropState()
+
+    RectCropper(
+        imageBitmap = imageBitmap,
+        state = cropState,
+        modifier = Modifier.fillMaxSize(),
+    )
+
+    val normalizedSelection = cropState.normalizedRectOrNull()
+    val sourceSelection = cropState.selectionOrNull(
+        CropSourceSize(
+            width = imageBitmap.width,
+            height = imageBitmap.height,
+        )
+    )
+}
 ```
+
+`normalizedRectOrNull()` returns a normalized `Rect` in the `0..1` range.
+`selectionOrNull(...)` converts the selection to the source image coordinates.

@@ -9,3 +9,8 @@ plugins {
     alias(libs.plugins.androidLint) apply false
     alias(libs.plugins.kotlinSerialization) apply false
 }
+
+allprojects {
+    group = "com.lortunate"
+    version = "0.0.1"
+}

@@ -1,0 +1,1 @@
+Before considering work complete, inspect `git diff`, run the most relevant Gradle tests/build tasks for the touched modules, and keep local-only directories such as `.serena/` out of commits unless explicitly requested. Use conventional commit messages and do not bypass hooks or use destructive git commands.

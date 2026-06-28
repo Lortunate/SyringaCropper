@@ -1,9 +1,11 @@
+import org.gradle.api.publish.maven.MavenPublication
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.androidLint)
+    id("maven-publish")
 }
 
 val rustJvmOutputDir: Provider<Directory> = layout.buildDirectory.dir("rust-jvm")
@@ -92,3 +94,38 @@ kotlin {
 }
 
 apply(from = "rust.gradle.kts")
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/lortunate/SyringaCropper")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+                    .orNull
+                password = providers.gradleProperty("gpr.key")
+                    .orElse(providers.environmentVariable("GITHUB_TOKEN"))
+                    .orNull
+            }
+        }
+    }
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set("SyringaCropper Processor")
+            description.set("Multiplatform image processing backend for SyringaCropper.")
+            url.set("https://github.com/Lortunate/SyringaCropper")
+            licenses {
+                license {
+                    name.set("Apache License 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                }
+            }
+            scm {
+                url.set("https://github.com/Lortunate/SyringaCropper")
+                connection.set("scm:git:git://github.com/Lortunate/SyringaCropper.git")
+                developerConnection.set("scm:git:ssh://git@github.com/Lortunate/SyringaCropper.git")
+            }
+        }
+    }
+}
